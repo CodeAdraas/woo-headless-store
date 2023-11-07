@@ -309,127 +309,193 @@ declare module "types/wooCommerce" {
 }
 declare module "types/index" {
     export * from "types/wooCommerce";
-    import type { LineItem } from "types/wooCommerce";
-    export interface HeadlessStoreCartLineItem {
-        id: string;
-        key: string;
-        name: string;
-        images: string;
-        quantity: number;
-        currencySymbol: string;
-        price: string;
-        subtotal: string;
-        total: number;
-        tax: number;
-        increase(): void;
-        decrease(): void;
-        remove(): void;
-    }
-    export interface HeadlessStoreCart {
-        create(): HeadlessStoreCart;
-        token: string;
-        expires: number;
-        lineItems: HeadlessStoreCartLineItem[];
-        currency: string;
-        subtotal: string;
-        tax: string;
-        total: string;
-        loading: boolean;
-        add(lineItem: LineItem): HeadlessStoreCartLineItem;
-        item(key: string): HeadlessStoreCartLineItem | null;
-        clear(): void;
-    }
-    export interface HeadlessStore {
-        /** State storage */
-        storage: Record<string, any>;
-        apiBaseUrl: string;
-        storeBaseUrl: string;
-        storeCheckoutPage: string;
-        cart: HeadlessStoreCart;
-        loaded: boolean;
-        /**
-         * Redirect customer to checkout
-         * @param waitFor Promise to await before redirecting customer.
-         */
-        toCheckout(waitFor: Promise<void>): void;
-    }
+    /**
+     * A simple storage object. Could be a reactive proxy to localstorage.
+     */
+    export type Storage = {
+        wcCartToken?: string;
+        wcCartNonce?: string;
+        [key: string]: string | number | boolean;
+    };
 }
 declare module "core" {
-    import type { CheckoutData } from "types/index";
-    export const CART_EXP_OFFSET: number;
+    import type { Storage, CheckoutData, LineItem } from "types/index";
+    /**
+     * WP-JSON WC store API namespace, used for discovery.
+     */
+    export const STORE_API_NAMESPACE = "wc/store/v1";
     export class Store {
-        storage: any;
-        apiBaseUrl: any;
-        storeBaseUrl: any;
-        storeCheckoutPage: any;
-        cart: Cart;
-        api: any;
-        private _storeApi;
-        loaded: boolean;
-        constructor(storage: any, apiBaseUrl: any, storeBaseUrl: any);
-        init(): void;
-        get storeApi(): any;
         /**
-         * Make a fetch request that checks for new cart token and/or nonces.
+         * Storage object that stores tokens for cart sessions.
+         */
+        private storage;
+        /**
+         * WC store API base URL.
+         */
+        private apiBaseUrl;
+        /**
+         * Cart session.
+         */
+        cart: Cart;
+        /**
+         * Discovered WC store API namespace.
+         */
+        api: any;
+        /**
+         * Indication if underlying `api` is discovered and ready to use.
+         *
+         * Could be made reactive on high level.
+         */
+        loaded: boolean;
+        constructor(storage?: Storage, apiBaseUrl?: string);
+        /**
+         * Discover WP-API and set WC store API namespace.
+         */
+        init(): void;
+        /**
+         * Make a fetch request and apply middleware for cart session tokens.
          */
         apiRequest(options: {
-            url: any;
-            method?: any;
-            data?: any;
+            url: string;
+            method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+            data?: string | number | boolean | Record<string, any>;
         }): Promise<any>;
     }
     export class Cart {
-        token: any;
-        expires: any;
-        nonce: any;
-        lineItems: CartLineItem[];
-        currency: any;
-        subtotal: any;
-        tax: any;
-        total: any;
-        store: any;
+        /**
+         * WC cart session token.
+         */
+        token?: string;
+        /**
+         * WC cart session nonce.
+         */
+        nonce?: string;
+        /**
+         * Cart line items.
+         */
+        items: CartLineItem[];
+        /**
+         * Store instance.
+         */
+        store: Store;
+        /**
+         * Indication wheter cart is initialized. Meaning if the current
+         * loaded cart session is up-to-date.
+         */
         private isInit;
+        /**
+         * Indication wheter cart is busy calling the API.
+         */
         loading: boolean;
-        constructor(token: any, nonce: any, expires: any);
+        constructor(token?: string, nonce?: string);
+        get subtotal(): any;
+        get tax(): any;
+        get total(): any;
+        get currencyCode(): string;
         /**
-         * Utility function to check if cart expiration timestamp is due.
+         * Set Store instance.
          */
-        static expired(timestamp: number, offset?: number): boolean;
+        setStore(store: Store): void;
         /**
-         * Create a new headless store cart with a prefilled cart key
-         * (unique ID) and default expiration time.
+         * Exclusively set provided cart session tokens.
          */
-        static create(): Cart;
-        setStore(store: any): void;
+        setTokens(token?: string, nonce?: string): void;
+        /**
+         * Initialize cart. Loads current cart session or creates a new one.
+         */
         init(): Promise<{
             api: any;
         }>;
-        private setCurrency;
-        add(lineItem: any): Promise<void>;
+        /**
+         * Get a cart item by key. Returns null if item provided key
+         * does not resolve.
+         */
+        item(key: any): CartLineItem;
+        /**
+         * Add a new lineitem. If a duplicate line item is provided, it
+         * increments the existing line item.
+         */
+        add(lineItem: LineItem): Promise<void>;
+        /**
+         * Clear all line items.
+         */
         clear(): Promise<void>;
+        /**
+         * Refresh cart. Sets (new) line items.
+         */
         refresh(): Promise<void>;
+        /**
+         * Checkout with current cart and return payment redirect URL.
+         */
+        checkout(data: CheckoutData): Promise<string>;
         private setLineItems;
+        /**
+         * @TODO Add type for line item data returned from Store API,
+         * instead of any.
+         */
         private addLineItem;
-        checkout(data: CheckoutData): Promise<any>;
         markLoading(): void;
         markNotLoading(): void;
-        item(key: any): CartLineItem;
     }
     export class CartLineItem {
-        id: any;
+        /**
+         * Cart item key.
+         */
         key: any;
+        /**
+         * Product ID.
+         */
+        id: any;
+        /**
+         * Product name.
+         */
         name: any;
+        /**
+         * Product images.
+         */
         images: any;
+        /**
+         * Product cart quantity.
+         */
         quantity: any;
+        /**
+         * Cart item currency code e.g. EUR.
+         */
+        currencyCode: string;
+        /**
+         * Cart item currenct symbol e.g. €.
+         */
         currencySymbol: any;
+        /**
+         * Cart item price.
+         */
         price: any;
+        /**
+         * Cart item subtotal.
+         */
         subtotal: any;
+        /**
+         * Cart item total tax amount.
+         */
         tax: any;
+        /**
+         * Cart item total amount.
+         */
         total: any;
         private cart;
-        constructor(id: any, key: any, name: any, images: any, quantity: any, currency: any, currencySymbol: any, price: any, subtotal: any, tax: any, total: any, cart: any);
+        constructor(id: any, key: any, name: any, images: any, quantity: any, currencyCode: any, currencySymbol: any, price: any, subtotal: any, tax: any, total: any, cart: any);
+        /**
+         * Increase quantity of current cart item.
+         */
         increase(): Promise<void>;
+        /**
+         * Decrease quantity of current cart item. If
+         * result will be 0, remove item from cart.
+         */
         decrease(): Promise<void>;
+        /**
+         * Remove item from cart.
+         */
         remove(): Promise<void>;
     }
 }

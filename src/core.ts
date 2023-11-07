@@ -1,7 +1,7 @@
 import WPAPI from 'wpapi';
 // @ts-ignore
 import Dinero from 'dinero.js';
-import type {Storage, CheckoutData} from './types';
+import type {Storage, CheckoutData, LineItem} from './types';
 
 /**
  * WP-JSON WC store API namespace, used for discovery.
@@ -143,17 +143,6 @@ export class Cart {
         this.loading = true;
     }
 
-    /**
-     * Cart currency code.
-     */
-    get currency() {
-        if (!this.items.length) return null;
-        return this.items[0].currencyCode;
-    }
-
-    /**
-     * Cart subtotal Dinero price.
-     */
     get subtotal() {
         if (!this.items.length) return null;
 
@@ -164,14 +153,10 @@ export class Cart {
 
         return Dinero({
             amount: subtotal,
-            currency: this.currency
+            currency: this.currencyCode
         });
     }
 
-    
-    /*
-     * Cart total tax amount.
-     */
     get tax() {
         if (!this.items.length) return null;
 
@@ -182,13 +167,10 @@ export class Cart {
 
         return Dinero({
             amount: tax,
-            currency: this.currency
+            currency: this.currencyCode
         });
     }
 
-    /*
-     * Cart total amount.
-     */
     get total() {
         if (!this.items.length) return null;
 
@@ -199,8 +181,13 @@ export class Cart {
 
         return Dinero({
             amount: total,
-            currency: this.currency
+            currency: this.currencyCode
         });
+    }
+
+    get currencyCode() {
+        if (!this.items.length) return null;
+        return this.items[0].currencyCode;
     }
 
     /**
@@ -263,7 +250,7 @@ export class Cart {
      * Add a new lineitem. If a duplicate line item is provided, it
      * increments the existing line item.
      */
-    public async add(lineItem: any) {
+    public async add(lineItem: LineItem) {
         const {api} = await this.init()
         this.markLoading()
         await this.store.apiRequest({
@@ -323,6 +310,10 @@ export class Cart {
         lineItems?.forEach((lineItem: any) => this.addLineItem(lineItem));
     }
 
+    /**
+     * @TODO Add type for line item data returned from Store API,
+     * instead of any.
+     */
     private addLineItem(data: any) {
         let lineItem = new CartLineItem(
             data.id,
@@ -330,7 +321,7 @@ export class Cart {
             data.name,
             data.images,
             data.quantity,
-            this.currency,
+            this.currencyCode,
             data.totals.currency_symbol,
             parseInt(data.prices.price),
             parseInt(data.totals.line_subtotal),
@@ -423,20 +414,20 @@ export class CartLineItem {
         total: any,
         cart: any
     ) {
-        this.id = id
-        this.key = key
-        this.name = name
-        this.images = images
-        this.quantity = quantity
+        this.id = id;
+        this.key = key;
+        this.name = name;
+        this.images = images;
+        this.quantity = quantity;
         this.currencyCode = currencyCode;
-        this.currencySymbol = currencySymbol
+        this.currencySymbol = currencySymbol;
         
-        this.price = Dinero({amount: price, currency: currencyCode})
-        this.subtotal = Dinero({amount: subtotal, currency: currencyCode})
-        this.tax = Dinero({amount: tax, currency: currencyCode})
-        this.total = Dinero({amount: total, currency: currencyCode})
-
-        this.cart = cart
+        this.price = Dinero({amount: price, currency: currencyCode});
+        this.subtotal = Dinero({amount: subtotal, currency: currencyCode});
+        this.tax = Dinero({amount: tax, currency: currencyCode});
+        this.total = Dinero({amount: total, currency: currencyCode});
+;
+        this.cart = cart;
     }
 
     /**
@@ -445,12 +436,10 @@ export class CartLineItem {
     async increase() {
         const {api} = await this.cart.init()
         await this.cart.store.apiRequest({
-            url: api
-                .cart()
-                .items(this.key),
+            url: api.cart().items(this.key),
             method: 'PATCH',
             data: {quantity: this.quantity + 1}
-        })
+        });
     }
 
     /**
@@ -460,16 +449,14 @@ export class CartLineItem {
     async decrease() {
         const {api} = await this.cart.init()
         if (this.quantity - 1 <= 0) {
-            await this.remove()
+            await this.remove();
         }
         else {
             await this.cart.store.apiRequest({
-                url: api
-                    .cart()
-                    .items(this.key),
+                url: api.cart().items(this.key),
                 method: 'PATCH',
                 data: {quantity: this.quantity - 1}
-            })
+            });
         }
     }
 
@@ -479,10 +466,8 @@ export class CartLineItem {
     async remove() {
         const {api} = await this.cart.init()
         await this.cart.store.apiRequest({
-            url: api
-                .cart()
-                .items(this.key),
+            url: api.cart().items(this.key),
             method: 'DELETE'
-        })
+        });
     }
 }

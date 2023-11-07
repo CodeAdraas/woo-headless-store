@@ -49,3 +49,12 @@ export interface HeadlessStore {
      */
     toCheckout(waitFor: Promise<void>): void;
 }
+
+/**
+ * A simple storage object. Could be a reactive proxy to localstorage.
+ */
+export type Storage = {
+    wcCartToken?: string;
+    wcCartNonce?: string;
+    [key: string]: string | number | boolean;
+};

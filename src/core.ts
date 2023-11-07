@@ -1,7 +1,7 @@
 import WPAPI from 'wpapi';
 // @ts-ignore
 import Dinero from 'dinero.js';
-import type {Storage, CheckoutData, LineItem} from './types';
+import type {Storage, CheckoutData, LineItem, Image} from './types';
 
 /**
  * WP-JSON WC store API namespace, used for discovery.
@@ -346,27 +346,29 @@ export class CartLineItem {
     /**
      * Cart item key.
      */
-    key: any;
+    key: string;
 
     /**
      * Product ID.
      */
-    id: any;
+    id: number;
 
     /**
      * Product name.
      */
-    name: any;
+    name: string;
 
     /**
      * Product images.
+     * 
+     * @TODO: This typing is not correct actually.
      */
-    images: any;
+    images: Image[];
 
     /**
      * Product cart quantity.
      */
-    quantity: any;
+    quantity: number;
 
     /**
      * Cart item currency code e.g. EUR.
@@ -376,7 +378,7 @@ export class CartLineItem {
     /**
      * Cart item currenct symbol e.g. €.
      */
-    currencySymbol: any;
+    currencySymbol: string;
 
     /**
      * Cart item price.

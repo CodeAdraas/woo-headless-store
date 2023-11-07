@@ -319,7 +319,7 @@ declare module "types/index" {
     };
 }
 declare module "core" {
-    import type { Storage, CheckoutData, LineItem } from "types/index";
+    import type { Storage, CheckoutData, LineItem, Image } from "types/index";
     /**
      * WP-JSON WC store API namespace, used for discovery.
      */
@@ -441,23 +441,25 @@ declare module "core" {
         /**
          * Cart item key.
          */
-        key: any;
+        key: string;
         /**
          * Product ID.
          */
-        id: any;
+        id: number;
         /**
          * Product name.
          */
-        name: any;
+        name: string;
         /**
          * Product images.
+         *
+         * @TODO: This typing is not correct actually.
          */
-        images: any;
+        images: Image[];
         /**
          * Product cart quantity.
          */
-        quantity: any;
+        quantity: number;
         /**
          * Cart item currency code e.g. EUR.
          */
@@ -465,7 +467,7 @@ declare module "core" {
         /**
          * Cart item currenct symbol e.g. €.
          */
-        currencySymbol: any;
+        currencySymbol: string;
         /**
          * Cart item price.
          */

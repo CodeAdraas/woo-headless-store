@@ -81,16 +81,6 @@ export class Store {
             }
         })
 
-        // Read and store cart session tokens.
-        if (fetchResult.headers.has('cart-token')) {
-            this.cart.token =
-            this.storage.cartToken = this.cart.token
-        }
-        if (fetchResult.headers.has('nonce')) {
-            this.cart.nonce = fetchResult.headers.get('nonce')
-            this.storage.cartNonce = this.cart.nonce
-        }
-
         // Set cart session tokens
         this.cart.setTokens(
             fetchResult.headers.get('cart-token'),
@@ -98,10 +88,10 @@ export class Store {
         );
 
         // Update storage
-        this.storage.wcCartToken = fetchResult.headers.get('cart-token')
+        this.storage.wcCartToken = fetchResult.headers.has('cart-token')
             ? fetchResult.headers.get('cart-token')
             : this.storage.wcCartToken
-        this.storage.wcCartNone = fetchResult.headers.get('nonce')
+        this.storage.wcCartNone = fetchResult.headers.has('nonce')
             ? fetchResult.headers.get('nonce')
             : this.storage.wcCartNone
 

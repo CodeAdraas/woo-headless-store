@@ -1,4 +1,5 @@
 import WPAPI from 'wpapi'
+// @ts-ignore
 import Dinero from 'dinero.js';
 import type {CheckoutData} from './types'
 
@@ -15,10 +16,9 @@ export class Store {
     private _storeApi: any
     loaded: boolean
 
-    constructor(storage: any, apiBaseUrl: any, storeBaseUrl: any) {
+    constructor(storage: any, apiBaseUrl: any) {
         this.storage = storage
         this.apiBaseUrl = apiBaseUrl
-        this.storeBaseUrl = storeBaseUrl
 
         // Create new cart
         if (Cart.expired(storage?.cartExp || 0)) {
